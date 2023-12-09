@@ -1,0 +1,47 @@
+# INFOS DE SESSIONS
+# R version 4.2.3 (2023-03-15)
+# Platform: x86_64-conda-linux-gnu (64-bit)
+# Running under: Ubuntu 20.04.3 LTS
+
+#1) IMPORTATION DES DIFFERENTES LIBRAIRIES
+library(readr)
+
+#2) IMPORTATION DU DATASET
+X0003558_231120084113126_Copie <- read_delim("~/0003558-231120084113126 - Copie.csv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+#3) PREPARATION DES DONNEES
+#a) changement du nom en quelquechose de plus explicite
+gbif_chim<- X0003558_231120084113126_Copie
+
+#b) Création du nouveau tableau en ne gardant que les colonnes indiquées
+nouveau_tableau <- gbif_chim[c("scientificName",	 "decimalLatitude",	"decimalLongitude",	
+                               "elevation",	"depth",	"eventDate")]
+
+
+#4) NETTOYAGE DU JEU DE DONNEES
+#a) suppression des lignes présentant des données manquantes pour la lattitude ou la longitude
+data_filtre1 <- nouveau_tableau[complete.cases(gbif_chim$decimalLatitude, gbif_chim$decimalLongitude), ]
+
+#b) suppression d'un potentiel point référentiel aux coordonnées 0,0
+data_filtre2 <- subset(data_filtre1, !(decimalLatitude == 0 & decimalLongitude == 0))
+
+#c) suppression de possibles valeurs aberrantes pour lattitude [-90;90] et longitude [-180;180]
+data_filtre3 <- data_filtre2[which(data_filtre2$decimalLatitude >= -90 & data_filtre2$decimalLatitude <= 90), ]
+data_filtre <- data_filtre3[which(data_filtre3$decimalLongitude>= -180 & data_filtre3$decimalLongitude <= 180), ]
+
+#5)EXTRACTION DES DONNEES D'ETENDUE SPATIALE
+#a) création d'un tableau qui extrait les données du tableau précédemment créé
+nouveau_tableau <- data.frame(
+  minimum = sapply(data_filtre[, c("decimalLatitude", "decimalLongitude", "elevation")], min, na.rm = TRUE),
+  maximum = sapply(data_filtre[, c("decimalLatitude", "decimalLongitude", "elevation")], max, na.rm = TRUE)
+)
+
+rownames(nouveau_tableau) <- c("Lattitude", "Longitude", "Altitude")
+print(nouveau_tableau)
+
+
+#6 )EXPORT DE NOTRE JEU DE DONNEES
+getwd() #pour savoir dans quel dossier on se trouve
+write.csv2(data_filtre,file= 'monfichier.csv')
